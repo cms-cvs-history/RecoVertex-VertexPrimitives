@@ -1,5 +1,6 @@
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "RecoVertex/VertexPrimitives/interface/VertexException.h"
+// #include "CommonReco/PatternTools/interface/RefittedRecTrack.h"
 #include "RecoVertex/VertexPrimitives/interface/ConvertError.h"
 #include "TrackingTools/TransientTrack/interface/TrackTransientTrack.h"
 #include <algorithm>
@@ -133,8 +134,6 @@ void TransientVertex::weightMap(const TransientTrackToFloatMap & theMap)
 void TransientVertex::refittedTracks(
 	const std::vector<reco::TransientTrack> & refittedTracks)
 {
-  if (refittedTracks.empty())
-    throw VertexException("TransientVertex::refittedTracks: No refitted tracks stored in input container");
   theRefittedTracks = refittedTracks;
   withRefittedTracks = true;
 }
@@ -143,7 +142,7 @@ void TransientVertex::refittedTracks(
 void TransientVertex::tkToTkCovariance(const TTtoTTmap covMap)
 {
   theCovMap = covMap;
-  theCovMapAvailable = true;
+  withPrior = true;
 }
 
 float TransientVertex::trackWeight(const TransientTrack & track) const {
@@ -160,7 +159,7 @@ float TransientVertex::trackWeight(const TransientTrack & track) const {
 
 }
 
-AlgebraicMatrix33
+AlgebraicMatrix
 TransientVertex::tkToTkCovariance(const TransientTrack& t1, const TransientTrack& t2) const
 {
   if (!theCovMapAvailable) {
@@ -218,26 +217,20 @@ TransientTrack TransientVertex::refittedTrack(const TransientTrack & track) cons
 
 TransientVertex::operator reco::Vertex() const
 {
-   //If the vertex is invalid, return an invalid TV !
-  if (!isValid()) return Vertex();
-
   Vertex vertex(Vertex::Point(theVertexState.position()),
 	RecoVertex::convertError(theVertexState.error()), 
 	totalChiSquared(), degreesOfFreedom(), theOriginalTracks.size() );
   for (vector<TransientTrack>::const_iterator i = theOriginalTracks.begin();
        i != theOriginalTracks.end(); ++i) {
-//     const TrackTransientTrack* ttt = dynamic_cast<const TrackTransientTrack*>((*i).basicTransientTrack());
-//     if ((ttt!=0) && (ttt->persistentTrackRef().isNonnull()))
-//     {
-//       TrackRef tr = ttt->persistentTrackRef();
-//       TrackBaseRef tbr(tr);
+    const TrackTransientTrack* ttt = dynamic_cast<const TrackTransientTrack*>((*i).basicTransientTrack());
+    if ((ttt!=0) && (ttt->persistentTrackRef().isNonnull()))
+    {
       if (withRefittedTracks) {
-        
-	vertex.add((*i).trackBaseRef(), refittedTrack(*i).track(), trackWeight ( *i ) );
+	vertex.add(ttt->persistentTrackRef(), refittedTrack(*i).track(), trackWeight ( *i ) );
       } else { 
-	vertex.add((*i).trackBaseRef(), trackWeight ( *i ) );
+	vertex.add(ttt->persistentTrackRef(), trackWeight ( *i ) );
       }
-    //}
+    }
   }
   return vertex;
 }
