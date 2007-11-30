@@ -245,12 +245,12 @@ CachingVertex<N>::operator TransientVertex() const
   vector<reco::TransientTrack> refTTVect;
   TransientTrackToFloatMap theWeightMap;
   TTtoTTmap ttCovMap;
-  // float theMinWeight = 0.5;
+  float theMinWeight = 0.5;
 
   for (typename vector<RefCountedVertexTrack>::const_iterator i = theTracks.begin();
        i != theTracks.end(); ++i) {
     // discard tracks with too low weight
-    // if ((**i).weight() < theMinWeight) continue;
+    if ((**i).weight() < theMinWeight) continue;
 
     reco::TransientTrack t1((**i).linearizedTrack()->track());
     ttVect.push_back(t1);
